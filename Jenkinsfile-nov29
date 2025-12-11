@@ -1,63 +1,100 @@
-pipeline{
-  agent any 
-  tools {
-    maven "maven3.9.11"
-  }  
-  stages {
-    stage('clone from github'){
-      steps{
-        sh "echo 'cloning the latest application version' "
-        git branch: 'nov29', url: 'https://github.com/ejob13/liontech-online-library-web-app.git'
-      }
-    }
-    stage('3Test+Build'){
-      steps{
-        sh "echo 'running JUnit-test-cases' "
-        sh "echo 'testing must passed to create artifacts ' "
-        sh "mvn clean package"
-      }
-    }
-    stage('4CodeQuality'){       
-      steps{
-        sh "echo 'Perfoming CodeQualityAnalysis' "
-        sh "mvn sonar:sonar"
-      }
-    }
-    stage('5uploadNexus'){
-      steps{
-        sh "mvn deploy"
-      }
-    } 
-    stage('8deploy2prod'){
-      steps{
-        deploy adapters: [tomcat9(alternativeDeploymentContext: '', credentialsId: 'TOMCAT-DEPLOYER', path: '', url: 'http://35.182.68.230:8009/')], contextPath: 'nov29', war: 'target/*war'
-      }
-    }
-}
-  post{
-    always{
-      emailext body: '''Hey guys
-Please check build status.
+pipeline {
+    agent any
 
-Thanks
-LionTech 
-+1 437 215 2483''', recipientProviders: [buildUser(), developers()], subject: 'success', to: 'paypal-team@gmail.com'
+    tools {
+        maven "maven3.9.11"
+        git   "git"               // ✅ Git tool added (must exist in Jenkins)
     }
-    success{
-      emailext body: '''Hey guys
-Good job build and deployment is successful.
 
-Thanks
-LionTech 
-+1 437 215 2483''', recipientProviders: [buildUser(), developers()], subject: 'success', to: 'paypal-team@gmail.com'
-    } 
-    failure{
-      emailext body: '''Hey guys
-Build failed. Please resolve issues.
+    stages {
 
-Thanks
-LionTech 
-+1 437 215 2483''', recipientProviders: [buildUser(), developers()], subject: 'success', to: 'paypal-team@gmail.com'
+        stage('Clone from GitHub') {
+            steps {
+                sh "echo 'Cloning the latest application version...'"
+                git branch: 'master', url: 'https://github.com/ejob13/liontech-online-library-web-app.git'
+            }
+        }
+
+        stage('Test + Build') {
+            steps {
+                sh "echo 'Running JUnit test cases...'"
+                sh "echo 'Tests must pass before packaging...'"
+                sh "mvn clean package"
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                sh "echo 'Performing Code Quality Analysis...'"
+                sh "mvn sonar:sonar"
+            }
+        }
+
+        stage('Upload to Nexus') {
+            steps {
+                sh "mvn deploy"
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                deploy(
+                    adapters: [
+                        tomcat9(
+                            alternativeDeploymentContext: '',
+                            credentialsId: 'TOMCAT-DEPLOYER',
+                            path: '',
+                            url: 'http://35.182.68.230:8009/'
+                        )
+                    ],
+                    contextPath: 'nov29',
+                    war: 'target/*.war'
+                )
+            }
+        }
     }
-  } 
+
+    post {
+        always {
+            emailext(
+                body: '''Hey team,
+Please check the build status.
+
+Thanks,
+LionTech
++1 437 215 2483''',
+                recipientProviders: [buildUser(), developers()],
+                subject: 'Build Status',
+                to: 'paypal-team@gmail.com'
+            )
+        }
+
+        success {
+            emailext(
+                body: '''Hey team,
+Good job! Build and deployment were successful.
+
+Thanks,
+LionTech
++1 437 215 2483''',
+                recipientProviders: [buildUser(), developers()],
+                subject: 'Build SUCCESS',
+                to: 'paypal-team@gmail.com'
+            )
+        }
+
+        failure {
+            emailext(
+                body: '''Hey team,
+Build failed. Please resolve the issues.
+
+Thanks,
+LionTech
++1 437 215 2483''',
+                recipientProviders: [buildUser(), developers()],
+                subject: 'Build FAILURE',
+                to: 'paypal-team@gmail.com'
+            )
+        }
+    }
 }
