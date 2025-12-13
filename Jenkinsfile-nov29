@@ -42,9 +42,9 @@ pipeline {
                     adapters: [
                         tomcat9(
                             alternativeDeploymentContext: '',
-                            credentialsId: 'Tomcat-ID',
+                            credentialsId: 'Tomcat-cred',
                             path: '',
-                            url: 'http://98.94.9.160:8009/'
+                            url: 'http://18.205.245.65:8009/'
                         )
                     ],
                     contextPath: 'nov29',
